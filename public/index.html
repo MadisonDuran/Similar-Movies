@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Similar Movies</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <main>
+            <h1>Find Similar Movies</h1>
+            <form id="searchForm" method="POST" action="/search" class="searchBar">
+                <input id="queryInput" name="query" placeholder="Enter a movie title" aria-label="Movie title" />
+                <button id="searchBtn" type="submit">Search</button>
+            </form>
+            <p class="muted">Type a title and press Search. You'll then choose the exact movie.</p>
+        </main>
+        <script src="/app.js"></script>
+    </body>
+</html>

@@ -119,6 +119,10 @@ async function tmdbSimilar(id) {
     return r.json();
 }
 
+app.get("/search", (req, res) => {
+    res.redirect("/");
+});
+
 app.post("/search", async (req, res) => {
     const query = (req.body.query || "").trim();
     if (!query) {

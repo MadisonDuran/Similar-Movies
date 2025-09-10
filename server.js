@@ -1,3 +1,4 @@
+import fetch from "node-fetch";
 import express from "express";
 import dotenv from "dotenv";
 import path from "path";
@@ -18,6 +19,7 @@ if (!API_KEY) {
     process.exit(1);
 }
 
+app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true}));
 app.use(express.json());
 

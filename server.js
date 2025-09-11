@@ -1,37 +1,39 @@
-import fetch from "node-fetch";
-import express from "express";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
+import fetch from "node-fetch"; // npm install node-fetch@3
+import express from "express"; // npm install express
+import dotenv from "dotenv"; // npm install dotenv
+import path from "path"; // Built-in with Node.js
+import { fileURLToPath } from "url"; // Built-in with Node.js
 
-dotenv.config();
+dotenv.config(); // Load .env file
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url); // Get current file path
+const __dirname = path.dirname(__filename); // Get current directory path
 
-const app = express();
-const TMDB_BASE = "https://api.themoviedb.org/3";
-const API_KEY = process.env.TMDB_API_KEY;
-const PORT = process.env.PORT || 3000;
+const app = express(); // Create Express app
+const TMDB_BASE = "https://api.themoviedb.org/3"; // TMDb API base URL
+const API_KEY = process.env.TMDB_API_KEY; // TMDb API key from .env
+const PORT = process.env.PORT || 3000; // Server port
 
-if (!API_KEY) {
-    console.error("Missing TMDB_API_KEY in .env");
-    process.exit(1);
+// Ensure API key is set
+
+if (!API_KEY) { // If no API key, exit with error
+    console.error("Missing TMDB_API_KEY in .env"); // Log error
+    process.exit(1); // Exit program
 }
 
-app.use(express.static(path.join(__dirname, "public")));
-app.use(express.urlencoded({ extended: true}));
-app.use(express.json());
+app.use(express.static(path.join(__dirname, "public"))); // Serve static files from "public" directory
+app.use(express.urlencoded({ extended: true})); // Parse URL-encoded form data
+app.use(express.json()); // Parse JSON request bodies
 
-function escapeHTML(str = "") {
-    return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll("'", "&#39;");
+function escapeHTML(str = "") { // Escape HTML special characters
+    return String(str) 
+        .replaceAll("&", "&amp;") // Escape &
+        .replaceAll("<", "&lt;") // Escape <
+        .replaceAll(">", "&gt;") // Escape >
+        .replaceAll("'", "&#39;"); // Escape '
 }
 
-function page({ title, heading, subtext = "", body = "" }) {
+function page({ title, heading, subtext = "", body = "" }) { // Generate full HTML page
     return `<!DOCTYPE html>
     <html lang="en">
     <head>
@@ -55,12 +57,12 @@ function page({ title, heading, subtext = "", body = "" }) {
                 </html>`;
 }
 
-function selectionForm(results, originalQuery) {
-    const options = results.slice(0, 10).map(m => {
-        const year = m.release_date ? ` (${m.release_date.slice(0, 4)})` : "";
-        const label = `${m.title}${year}`;
-        const poster = m.poster_path ? `https://image.tmdb.org/t/p/w92${m.poster_path}` : "";
-        return `
+function selectionForm(results, originalQuery) { // Generate movie selection form
+    const options = results.slice(0, 10).map(m => { // Limit to first 10 results
+        const year = m.release_date ? ` (${m.release_date.slice(0, 4)})` : ""; // Extract year from release date
+        const label = `${m.title}${year}`; // Movie title with year
+        const poster = m.poster_path ? `https://image.tmdb.org/t/p/w92${m.poster_path}` : ""; // Poster image URL
+        return ` 
             <label class="option">
                 <input type="radio" name="id" value="${m.id}" required>
                 ${poster ? `<img src="${poster}" alt="${escapeHTML(m.title)}">` : ""}
@@ -69,7 +71,7 @@ function selectionForm(results, originalQuery) {
         `;
     });
 
-    const enhanced = [];
+    const enhanced = []; // Enhance each option with a class
     options.forEach(html => enhanced.push(html.replace(`<label class="option">`, `<label class="option from-backend">`)));
 
     return `
@@ -82,14 +84,14 @@ function selectionForm(results, originalQuery) {
     `;
 }
 
-function similarGrid(chosenTitle, movies) {
-    if (!movies || movies.length === 0) {
-        return `<p class="muted">No similar movies found.</p>`;
+function similarGrid(chosenTitle, movies) { // Generate grid of similar movies
+    if (!movies || movies.length === 0) { // If no similar movies
+        return `<p class="muted">No similar movies found.</p>`; // Return message
     }
 
-    const cards = movies.map(m => {
-        const poster = m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : "";
-        const rating = typeof m.vote_average === "number" ? ` - Rating: ${m.vote_average.toFixed(1)}` : "";
+    const cards = movies.map(m => { // Create a card for each movie
+        const poster = m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : ""; // Poster image URL
+        const rating = typeof m.vote_average === "number" ? ` - Rating: ${m.vote_average.toFixed(1)}` : ""; // Format rating
         return `
             <div class="card">
                 ${poster ? `<img src="${poster}" alt="${escapeHTML(m.title)}">` : `<div class="no poster"></div>`}
@@ -99,7 +101,7 @@ function similarGrid(chosenTitle, movies) {
                 `;
     });
 
-    const enhanced = [];
+    const enhanced = []; // Enhance each card with a class
     cards.forEach(html => enhanced.push(html));
 
     return `
@@ -108,77 +110,77 @@ function similarGrid(chosenTitle, movies) {
     `;
 }
 
-async function tmdbSearchMovie(q) {
-    const r = await fetch(`${TMDB_BASE}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(q)}`);
-    if (!r.ok) throw new Error(`TMDb search failed: ${r.status}`);
-    return r.json();
+async function tmdbSearchMovie(q) { // Search for movies on TMDb
+    const r = await fetch(`${TMDB_BASE}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(q)}`); // Fetch search results
+    if (!r.ok) throw new Error(`TMDb search failed: ${r.status}`); // Throw error if request failed
+    return r.json(); // Return JSON response
 }
-async function tmdbSimilar(id) {
-    const r = await fetch(`${TMDB_BASE}/movie/${id}/similar?api_key=${API_KEY}`);
-    if (!r.ok) throw new Error(`TMDb similar failed: ${r.status}`);
-    return r.json();
+async function tmdbSimilar(id) { // Fetch similar movies from TMDb
+    const r = await fetch(`${TMDB_BASE}/movie/${id}/similar?api_key=${API_KEY}`); // Fetch similar movies
+    if (!r.ok) throw new Error(`TMDb similar failed: ${r.status}`); // Throw error if request failed
+    return r.json(); // Return JSON response
 }
 
-app.get("/search", (req, res) => {
-    res.redirect("/");
+app.get("/search", (req, res) => { // Redirect GET /search to home
+    res.redirect("/"); // Redirect to home
 });
 
-app.post("/search", async (req, res) => {
-    const query = (req.body.query || "").trim();
-    if (!query) {
-        return res.send(page({ title: "Similar Movies", heading: "Find Similar Movies", subtext: "Please enter a movie title." }));
+app.post("/search", async (req, res) => { // Handle movie search
+    const query = (req.body.query || "").trim(); // Get and trim query
+    if (!query) { // If query is empty
+        return res.send(page({ title: "Similar Movies", heading: "Find Similar Movies", subtext: "Please enter a movie title." })); // Prompt for input
     }
 
-    try {
-        const search = await tmdbSearchMovie(query);
-        const results = search.results || [];
-        if (results.length ===0) {
-            return res.send(page({
-                title: "Similar Movies",
-                heading: "Find Similar Movies",
-                subtext: `No results found for "${escapeHTML(query)}". Try another title.`
+    try { // Try to search for movies
+        const search = await tmdbSearchMovie(query); // Perform search
+        const results = search.results || []; // Get results array
+        if (results.length ===0) { // If no results found
+            return res.send(page({ // Show no results message
+                title: "Similar Movies", // Page title
+                heading: "Find Similar Movies", // Page heading
+                subtext: `No results found for "${escapeHTML(query)}". Try another title.` // No results message
             }));
         }
 
-        const body = selectionForm(results, query);
-        res.send(page({
-            title: "Similar Movies",
-            heading: "Find Similar Movies",
-            subtext: `Showing results for "${escapeHTML(query)}". Choose one below.`,
+        const body = selectionForm(results, query); // Generate selection form
+        res.send(page({ // Send response with selection form
+            title: "Similar Movies", // Page title
+            heading: "Find Similar Movies", // Page heading
+            subtext: `Showing results for "${escapeHTML(query)}". Choose one below.`, 
             body
         }));
-    } catch (err) {
-        res.send(page({
-            title: "Similar Movies",
-            heading: "Find Similar Movies",
-            subtext: `Error: ${escapeHTML(err.message)}`
+    } catch (err) { // Catch and handle errors
+        res.send(page({ // Send error page
+            title: "Similar Movies", // Page title
+            heading: "Find Similar Movies", // Page heading
+            subtext: `Error: ${escapeHTML(err.message)}` // Error message
         }));
     }
 });
 
-app.post("/choose", async (req, res) => {
-    const id = (req.body.id || "").trim();
-    const chosenTitle = req.body[`t_${id}`] || "Selected Movie";
-    const originalQuery = (req.body.originalQuery || "");
+app.post("/choose", async (req, res) => { // Handle movie selection and show similar movies
+    const id = (req.body.id || "").trim(); // Get selected movie ID
+    const chosenTitle = req.body[`t_${id}`] || "Selected Movie"; // Get chosen movie title
+    const originalQuery = (req.body.originalQuery || ""); // Get original search query
 
-    if (!id) return res.redirect("/");
+    if (!id) return res.redirect("/"); // Redirect if no ID
 
-    try {
-        const similar = await tmdbSimilar(id);
-        const body = similarGrid(chosenTitle, similar.results || []);
-        res.send(page({
-            title: `Similar to ${chosenTitle}`,
-            heading: "Find Similar Movies",
-            subtext: `You selected "${escapeHTML(chosenTitle)}" (searched: "${escapeHTML(originalQuery)}").`,
-            body
+    try { // Try to fetch similar movies
+        const similar = await tmdbSimilar(id); // Fetch similar movies
+        const body = similarGrid(chosenTitle, similar.results || []); // Generate similar movies grid
+        res.send(page({ // Send response with similar movies
+            title: `Similar to ${chosenTitle}`, // Page title
+            heading: "Find Similar Movies", // Page heading
+            subtext: `You selected "${escapeHTML(chosenTitle)}" (searched: "${escapeHTML(originalQuery)}").`, // Subtext with chosen movie
+            body // Body with similar movies grid
         }));
-    } catch (err) {
-        res.send(page({
-            title: "Similar Movies",
-            heading: "Find Similar Movies",
-            subtext: `Error: ${escapeHTML(err.message)}`
+    } catch (err) { // Catch and handle errors
+        res.send(page({ // Send error page
+            title: "Similar Movies", // Page title
+            heading: "Find Similar Movies", // Page heading
+            subtext: `Error: ${escapeHTML(err.message)}` // Error message
         }));
     }
 });
-
-app.listen(PORT, () => console.log(`Running at http://localhost:${PORT}`));
+ 
+app.listen(PORT, () => console.log(`Running at http://localhost:${PORT}`)); // Start server and log URL

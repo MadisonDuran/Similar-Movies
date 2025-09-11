@@ -1,4 +1,3 @@
-import fetch from "node-fetch"; // npm install node-fetch@3
 import express from "express"; // npm install express
 import dotenv from "dotenv"; // npm install dotenv
 import path from "path"; // Built-in with Node.js

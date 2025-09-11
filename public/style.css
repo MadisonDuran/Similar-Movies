@@ -83,7 +83,7 @@ transition: transform .1s ease;
 }
 .card:hover { transform: translateY(-2px); }
 .card img, .card .no-poster {
-width:100%; aspect-ratio:2/3; object-fit:cover; display:block; background:#eef1f5;
+width:100%; aspect-ratio:2/3; object-fit:cover; display:block; background:rgb(238, 241, 245);
 }
 .card h3 { margin:10px 12px 0; font-size:16px; }
 .small { margin:6px 12px 12px; color:rgb(106, 114, 128); font-size:14px; }
